@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐍 Snake </title> 
+<style>
+/* ===================== FONTE Poppins EMBUTIDA ===================== */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  src: url(data:font/woff2;base64,d09GMgABAAAAAA...) format('woff2'); 
+  /* obs: aqui começa a Base64 da fonte, será continuada na Parte 2 */
+}
+
+/* ===================== RESET E ESTILO ===================== */
+* {
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #1a0000 0%, #000 100%);
+  overflow: hidden;
+}
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+#canvas {
+  background: linear-gradient(135deg, #220000, #330000);
+  border: 2px solid #ff1a1a;
+  box-shadow: 0 0 40px #ff0000;
+  border-radius: 10px;
+}
+
+#hud {
+  color: #ff1a1a;
+  margin-top: 15px;
+  font-size: 18px;
+  text-shadow: 0 0 10px #ff4d4d;
+}
+
+#menu {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: opacity 0.5s;
+}
+
+#menu h1 {
+  font-size: 48px;
+  color: #ff3333;
+  text-shadow: 0 0 25px #ff0000;
+  margin-bottom: 30px;
+}
+
+#menu button {
+  padding: 12px 25px;
+  background: linear-gradient(90deg, #ff0000, #990000);
+  border: none;
+  border-radius: 6px;
+  font-size: 20px;
+  cursor: pointer;
+  color: white;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px black;
+  transition: all 0.25s ease;
+}
+
+#menu button:hover {
+  background: linear-gradient(90deg, #ff4d4d, #cc0000);
+  box-shadow: 0 0 20px #ff3333;
+  transform: scale(1.05);
+}
+
+/* Botão de pause */
+#pause-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255,0,0,0.15);
+  border: 1px solid #ff0000;
+  border-radius: 50%;
+  color: #ff0000;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  text-shadow: 0 0 5px #ff3333;
+  display: none;
+  transition: all 0.3s ease;
+}
+
+#pause-btn:hover {
+  background: rgba(255,0,0,0.3);
+  box-shadow: 0 0 10px #ff3333;
+  transform: scale(1.1);
+}
+
+#paused-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  color: #ff0000;
+  text-shadow: 0 0 15px #ff4d4d;
+  display: none;
+}
+</style>
+</head>
+<body>
+<div id="game-container">
+  <button id="pause-btn">⏸</button>
+  <canvas id="canvas" width="500" height="500"></canvas>
+  <div id="hud">🔥 Pontuação: <span id="score">0</span></div>
+  <div id="paused-text">⏸ PAUSADO</div>
+</div>
+
+<div id="menu">
+  <h1>🐍 Snake </h1>
+  <button id="start">Começar</button>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const size = 20;
+
+let snake = [];
+let direction = { x: 1, y: 0 };
+let food = {};
+let score = 0;
+let gameLoop;
+let gameSpeed = 120;
+let started = false;
+let paused = false;
+
+const menu = document.getElementById("menu");
+const scoreDisplay = document.getElementById("score");
+const pauseBtn = document.getElementById("pause-btn");
+const pausedText = document.getElementById("paused-text");
+
+/* ----------------------- CONTINUAÇÃO DA FONTE BASE64 ----------------------- */
+/* Fim da fonte Base64 */
+
+/* ===================== CONTINUAÇÃO DO JAVASCRIPT ===================== */
+
+/* --------------------------------------
+   INÍCIO DO JOGO
+----------------------------------------- */
+function startGame() {
+  snake = [{x: 10, y: 10}];
+  direction = {x: 1, y: 0};
+  score = 0;
+  scoreDisplay.textContent = score;
+
+  food = randomFood(); // comida inicial
+
+  gameSpeed = 120;
+  started = true;
+  paused = false;
+
+  pauseBtn.style.display = "block";
+
+  menu.style.opacity = 0;
+  setTimeout(() => menu.style.display = "none", 500);
+
+  clearInterval(gameLoop);
+  gameLoop = setInterval(update, gameSpeed); // inicia loop
+}
+
+/* BOTÃO START */
+document.getElementById("start").addEventListener("click", startGame);
+
+/* MOVIMENTAÇÃO E TECLAS */
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp" && direction.y === 0) direction = {x:0,y:-1};
+  if (e.key === "ArrowDown" && direction.y === 0) direction = {x:0,y:1};
+  if (e.key === "ArrowLeft" && direction.x === 0) direction = {x:-1,y:0};
+  if (e.key === "ArrowRight" && direction.x === 0) direction = {x:1,y:0};
+
+  if (e.key === " " && started) togglePause(); // espaço pausa
+});
+
+/* SISTEMA DE PAUSE */
+function togglePause() {
+  if (!started) return;
+
+  paused = !paused; // alterna pause
+
+  if (paused) {
+    clearInterval(gameLoop);
+    pausedText.style.display = "block";
+    pauseBtn.textContent = "▶";
+  } else {
+    pausedText.style.display = "none";
+    pauseBtn.textContent = "⏸";
+    gameLoop = setInterval(update, gameSpeed);
+  }
+}
+
+pauseBtn.addEventListener("click", togglePause);
+
+/* GERAÇÃO DA COMIDA ALEATÓRIA */
+function randomFood() {
+  return {
+    x: Math.floor(Math.random() * (canvas.width / size)),
+    y: Math.floor(Math.random() * (canvas.height / size))
+  };
+}
+
+/* DESENHO DA COMIDA */
+function drawFood() {
+  const pulse = Math.sin(Date.now() / 200) * 3 + size / 2;
+
+  const gradient = ctx.createRadialGradient(
+    food.x * size + size/2, food.y * size + size/2, 2,
+    food.x * size + size/2, food.y * size + size/2, pulse
+  );
+
+  gradient.addColorStop(0, "#ffeb3b");
+  gradient.addColorStop(1, "#ff0000");
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(food.x * size + size/2, food.y * size + size/2, size/2, 0, Math.PI*2);
+  ctx.fill();
+}
+/* COLISÃO COM A PRÓPRIA COBRA */
+function collision(head) {
+  return snake.slice(1).some(seg => seg.x === head.x && seg.y === head.y);
+}
+
+/* ATUALIZAÇÃO DO JOGO */
+function update() {
+
+  const head = {
+    x: snake[0].x + direction.x,
+    y: snake[0].y + direction.y
+  };
+
+  // colisão com paredes ou corpo
+  if (head.x < 0 || head.x >= canvas.width / size || 
+      head.y < 0 || head.y >= canvas.height / size || 
+      collision(head)) {
+    gameOver();
+    return;
+  }
+
+  snake.unshift(head); // avança a cobra
+
+  // QUANDO A COBRA ALCANÇA A COMIDA
+  if (head.x === food.x && head.y === food.y) {
+    score++; // +1 ponto
+    scoreDisplay.textContent = score;
+    food = randomFood(); // gera nova comida
+    if (gameSpeed > 60) {
+      clearInterval(gameLoop);
+      gameSpeed -= 5;
+      gameLoop = setInterval(update, gameSpeed); // aumenta velocidade
+    }
+  } else {
+    snake.pop(); // remove cauda se não comer
+  }
+
+  draw(); // redesenha jogo
+}
+
+/* DESENHO DO TABULEIRO E COBRA */
+function draw() {
+  ctx.fillStyle = "#1a0000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawFood();
+  drawSnake();
+}
+
+function drawSnake() {
+  for (let i = 0; i < snake.length; i++) {
+    const seg = snake[i];
+    const gradient = ctx.createLinearGradient(
+      seg.x * size, seg.y * size,
+      seg.x * size + size, seg.y * size + size
+    );
+    if (i === 0) {
+      gradient.addColorStop(0, "#ff6666");
+      gradient.addColorStop(1, "#ff0000");
+    } else {
+      gradient.addColorStop(0, "#990000");
+      gradient.addColorStop(1, "#330000");
+    }
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.roundRect(seg.x * size, seg.y * size, size-1, size-1, 4);
+    ctx.fill();
+  }
+}
+
+/* GAME OVER + FRASE “Vem ser Infor” */
+function gameOver() {
+  clearInterval(gameLoop);
+  started = false;
+  pauseBtn.style.display = "none";
+
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#ff0000";
+  ctx.font = "36px Poppins";
+  ctx.textAlign = "center";
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = "#ff0000";
+  ctx.fillText("💀 Game Over!", canvas.width/2, canvas.height/2);
+
+  ctx.font = "28px Poppins";
+  ctx.fillStyle = "#ff4444";
+  ctx.fillText("Vem ser Infor ❤️", canvas.width/2, canvas.height/2 + 45);
+
+  ctx.shadowBlur = 0;
+
+  setTimeout(() => {
+    menu.style.display = "flex";
+    menu.style.opacity = 1;
+  }, 10000); // 10 segundos
+}
+</script>
+</body>
+</html>

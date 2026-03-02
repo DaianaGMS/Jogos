@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🧠 Exercício de Memória</title>
+
+  <!-- Ícone substituindo o Font Awesome online (offline não funciona) -->
+  <style>
+    /* ===== ESTILO GERAL ===== */
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #8c1818, #ff5151);
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #fff;
+    }
+
+    h1 {
+      margin-top: 25px;
+      font-size: 2.2rem;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .line {
+      width: 120px;
+      height: 4px;
+      background-color: #fff;
+      border-radius: 3px;
+      margin: 10px auto 20px;
+    }
+
+    /* Placar */
+    .scoreboard {
+      display: flex;
+      gap: 30px;
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    /* ===== TABULEIRO ===== */
+    .memory-game {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 20px;
+      width: min(95vw, 1200px);
+    }
+
+    /* Cada carta */
+    .memory-card {
+      width: 100%;
+      aspect-ratio: 1 / 1.2;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease;
+      cursor: pointer;
+    }
+
+    /* Carta virada */
+    .memory-card.flip {
+      transform: rotateY(180deg);
+    }
+
+    /* Faces */
+    .front-face,
+    .back-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      backface-visibility: hidden;
+      overflow: hidden;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .front-face {
+      background: #fff;
+      transform: rotateY(180deg);
+      flex-direction: column;
+    }
+
+    .back-face {
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid #fff;
+    }
+
+    .front-face img {
+      width: 100%;
+      height: 85%;
+      object-fit: contain;
+    }
+
+    .label {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      font-weight: bold;
+      padding: 5px 0;
+      display: none;
+      position: absolute;
+      bottom: 0;
+    }
+
+    /* ===== MODAL ===== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.3s ease;
+    }
+
+    .modal.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      text-align: center;
+      color: #333;
+    }
+
+    .modal-content button {
+      background: #ff3366;
+      border: none;
+      margin-top: 15px;
+      padding: 10px 20px;
+      color: white;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    /* ===== RESPONSIVIDADE ===== */
+    @media (max-width: 900px) {
+      .memory-game {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .memory-game {
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Ícone simples que funciona offline -->
+  <div style="font-size: 45px; margin-top: 15px;">🎓</div>
+
+  <div class="line"></div>
+  <h1>Exercício de Memória</h1>
+  <p>Encontre todos os pares!</p>
+
+  <!-- Placar -->
+  <div class="scoreboard">
+    <div>⏱ Tempo: <span id="timer">00:00</span></div>
+    <div>🔄 Movimentos: <span id="moves">0</span></div>
+  </div>
+
+  <!-- ===== CARTAS ===== -->
+  <section class="memory-game">
+
+    <!-- PARES (corrigidos e funcionando offline) -->
+    <div class="memory-card" data-framework="pc">
+      <div class="front-face"><img src="img/computador.png"><span class="label">Computador</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="pc">
+      <div class="front-face"><img src="img/computador.png"><span class="label">Computador</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="cpu">
+      <div class="front-face"><img src="img/CPUU.avif"><span class="label">CPU</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="cpu">
+      <div class="front-face"><img src="img/CPUU.avif"><span class="label">CPU</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="fonte">
+      <div class="front-face"><img src="img/fontedealimentação.png"><span class="label">Fonte</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="fonte">
+      <div class="front-face"><img src="img/fontedealimentação.png"><span class="label">Fonte</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="mouse">
+      <div class="front-face"><img src="img/mouse.png"><span class="label">Mouse</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="mouse">
+      <div class="front-face"><img src="img/mouse.png"><span class="label">Mouse</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="ssd">
+      <div class="front-face"><img src="img/SSD--.png"><span class="label">SSD</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="ssd">
+      <div class="front-face"><img src="img/SSD--.png"><span class="label">SSD</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="teclado">
+      <div class="front-face"><img src="img/tecladoo.png"><span class="label">Teclado</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="teclado">
+      <div class="front-face"><img src="img/tecladoo.png"><span class="label">Teclado</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="wifi">
+      <div class="front-face"><img src="img/wi-fi-.png"><span class="label">Wi-Fi</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="wifi">
+      <div class="front-face"><img src="img/wi-fi-.png"><span class="label">Wi-Fi</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <!-- CORRIGIDO: faltava "img/" -->
+    <div class="memory-card" data-framework="gabinete">
+      <div class="front-face"><img src="gabinete.avif"><span class="label">Gabinete</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+    <div class="memory-card" data-framework="gabinete">
+      <div class="front-face"><img src="gabinete.avif"><span class="label">Gabinete</span></div>
+      <div class="back-face">?</div>
+    </div>
+
+  </section>
+
+  <!-- ===== MODAL ===== -->
+  <div class="modal" id="winModal">
+    <div class="modal-content">
+      <h2>🎉 Parabéns!</h2>
+      <p>Você encontrou todos os pares!</p>
+      <p><strong>Tempo:</strong> <span id="final-time"></span></p>
+      <p><strong>Movimentos:</strong> <span id="final-moves"></span></p>
+      <button onclick="restartGame()">Jogar Novamente</button>
+    </div>
+  </div>
+
+  <script>
+    /* ===== SELEÇÃO DE ELEMENTOS ===== */
+    const cards = document.querySelectorAll(".memory-card");
+    const timerDisplay = document.getElementById("timer");
+    const movesDisplay = document.getElementById("moves");
+    const winModal = document.getElementById("winModal");
+    const finalTime = document.getElementById("final-time");
+    const finalMoves = document.getElementById("final-moves");
+
+    /* VARIÁVEIS DO JOGO */
+    let hasFlippedCard = false;
+    let firstCard, secondCard;
+    let lockBoard = false;
+    let matchesFound = 0;
+    let moves = 0;
+    const totalPairs = cards.length / 2;
+
+    /* Timer */
+    let timer, seconds = 0, minutes = 0;
+    let gameStarted = false;
+
+    /* INÍCIO DO TIMER(Cronômetro) */
+    function startTimer() {
+      if (gameStarted) return;
+      gameStarted = true;
+
+      timer = setInterval(() => {
+        seconds++;
+        if (seconds === 60) { minutes++; seconds = 0; }
+
+        timerDisplay.textContent =
+          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }, 1000);
+    }
+
+    /* VIRAR CARTA */
+    function flipCard() {
+      if (lockBoard || this === firstCard) return;
+
+      startTimer();
+      this.classList.add("flip");
+      this.querySelector(".label").style.display = "block";
+
+      if (!hasFlippedCard) {
+        hasFlippedCard = true;
+        firstCard = this;
+        return;
+      }
+
+      secondCard = this;
+      moves++;
+      movesDisplay.textContent = moves;
+      checkForMatch();
+    }
+
+    /* CHECAR PAR */
+    function checkForMatch() {
+      const isMatch = firstCard.dataset.framework === secondCard.dataset.framework;
+      isMatch ? disableCards() : unflipCards();
+    }
+
+    /* ACERTOU PAR */
+    function disableCards() {
+      firstCard.removeEventListener("click", flipCard);
+      secondCard.removeEventListener("click", flipCard);
+
+      matchesFound++;
+      if (matchesFound === totalPairs) {
+        clearInterval(timer);
+        setTimeout(showWinModal, 600);
+      }
+
+      resetBoard();
+    }
+
+    /* ERROU PAR */
+    function unflipCards() {
+      lockBoard = true;
+
+      setTimeout(() => {
+        firstCard.classList.remove("flip");
+        secondCard.classList.remove("flip");
+
+        firstCard.querySelector(".label").style.display = "none";
+        secondCard.querySelector(".label").style.display = "none";
+
+        resetBoard();
+      }, 800);
+    }
+
+    /* RESETA ESTADO */
+    function resetBoard() {
+      [hasFlippedCard, lockBoard] = [false, false];
+      [firstCard, secondCard] = [null, null];
+    }
+
+    /* EMBARALHAR */
+    function shuffle() {
+      cards.forEach(card => {
+        card.style.order = Math.floor(Math.random() * cards.length);
+      });
+    }
+
+    /* REINICIAR */
+    function restartGame() {
+      winModal.classList.remove("show");
+      cards.forEach(card => {
+        card.classList.remove("flip");
+        card.querySelector(".label").style.display = "none";
+        card.addEventListener("click", flipCard);
+      });
+
+      shuffle();
+      matchesFound = 0;
+      moves = 0;
+      movesDisplay.textContent = 0;
+      seconds = 0;
+      minutes = 0;
+      timerDisplay.textContent = "00:00";
+
+      clearInterval(timer);
+      gameStarted = false;
+    }
+
+    /* MOSTRA MODAL */
+    function showWinModal() {
+      finalTime.textContent = timerDisplay.textContent;
+      finalMoves.textContent = moves;
+      winModal.classList.add("show");
+    }
+
+    /* INICIAR JOGO */
+    shuffle();
+    cards.forEach(card => card.addEventListener("click", flipCard));
+  </script>
+
+</body>
+</html>
